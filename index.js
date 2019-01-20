@@ -26,8 +26,10 @@ function getFeedAndPrint () {
     .catch(e => {
       console.log('Error fetching mta info', e)
     })
+
+  // Fetch and print every minute
   setTimeout(() => {
-    getFeed()
+    getFeedAndPrint()
   }, (1000 * 60))
 }
 
@@ -43,7 +45,6 @@ function makeMtaRequests (lineIds) {
 }
 
 function handleRequest (responses) {
-  console.log('RESPONSES', responses)
   responses.forEach(res => {
     const feed = GtfsRealtimeBindings.FeedMessage.decode(res)
     parseFeed(feed)
@@ -53,16 +54,18 @@ function handleRequest (responses) {
 function parseFeed (feed) {
   feed.entity.forEach(entity => { // <- each entity is just a train
     if (entity.trip_update) {
-      // console.log('ENTRY', entity.trip_update)
-      // console.log('SUBWAY', entity)
-      // console.log('STOP TIME UPDATES', entity.trip_update.stop_time_update)
+      const subwayLine = entity.trip_update.trip.route_id
       entity.trip_update.stop_time_update.forEach((stop) => {
         const { stop_id, arrival } = stop
-        // console.log('STOP ID', stop_id)
         if (stationsRegex.test(stop_id)) {
-          console.log('MY STOP', stop_id)
           const arrivalTs = arrival.time.low * 1000
-          console.log('ARRIVAL', moment(arrivalTs).format())
+          const trainArrival = moment(arrivalTs)
+          const now = moment(Date.now())
+          const duration = trainArrival.diff(now, 'minutes')
+          console.log('MY LINE', subwayLine)
+          console.log('MY STOP', stop_id)
+          console.log('ARRIVAL', moment(arrivalTs).valueOf())
+          console.log('Minutes AWAY', duration)
         }
       })
     }
